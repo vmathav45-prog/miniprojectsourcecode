@@ -18,6 +18,8 @@ void textFile(FILE *readPtr);
 void updateRecord(FILE *fPtr);
 void newRecord(FILE *fPtr);
 void deleteRecord(FILE *fPtr);
+void deposit(FILE *fPtr);
+void withdraw(FILE *fPtr);
 
 int main(int argc, char *argv[])
 {
@@ -51,6 +53,14 @@ int main(int argc, char *argv[])
         // delete existing record
         case 4:
             deleteRecord(cfPtr);
+            break;
+        //to deposit amnt in account
+        case 6:
+            deposit(cfPtr);
+            break;
+        //to withdraw amnt from account
+        case 7:
+            withdraw(cfPtr);
             break;
         // display if user does not select valid choice
         default:
@@ -131,7 +141,7 @@ void updateRecord(FILE *fPtr)
 
         // move file pointer to correct record in file
         // move back by 1 record length
-        fseek(fPtr, -sizeof(struct clientData), SEEK_CUR);
+        fseek(fPtr, -(long)sizeof(struct clientData), SEEK_CUR);
         // write updated record over old record in file
         fwrite(&client, sizeof(struct clientData), 1, fPtr);
     } // end else
@@ -200,6 +210,71 @@ void newRecord(FILE *fPtr)
     } // end else
 } // end function newRecord
 
+void withdraw(FILE *fPtr)
+{
+    struct clientData client = {0, "", "", 0.0};
+    unsigned int account;
+    double amount;
+
+    printf("Enter account number: ");
+    scanf("%u", &account);
+
+    fseek(fPtr, (account - 1) * sizeof(struct clientData), SEEK_SET);
+    fread(&client, sizeof(struct clientData), 1, fPtr);
+
+    if (client.acctNum == 0)
+    {
+        printf("Account not found.\n");
+        return;
+    }
+
+    printf("Enter amount to withdraw: ");
+    scanf("%lf", &amount);
+
+    if (amount > client.balance)
+    {
+        printf("Insufficient balance!\n");
+        return;
+    }
+
+    client.balance -= amount;
+
+    fseek(fPtr, -(long)sizeof(struct clientData), SEEK_CUR);
+    fwrite(&client, sizeof(struct clientData), 1, fPtr);
+
+    printf("Withdrawal successful. New balance = %.2f\n", client.balance);
+}
+// to withdraw amount from account
+
+void deposit(FILE *fPtr)
+{
+    struct clientData client = {0, "", "", 0.0};
+    unsigned int account;
+    double amount;
+
+    printf("Enter account number: ");
+    scanf("%u", &account);
+
+    fseek(fPtr, (account - 1) * sizeof(struct clientData), SEEK_SET);
+    fread(&client, sizeof(struct clientData), 1, fPtr);
+
+    if (client.acctNum == 0)
+    {
+        printf("Account not found.\n");
+        return;
+    }
+
+    printf("Enter amount to deposit: ");
+    scanf("%lf", &amount);
+
+    client.balance += amount;
+
+    fseek(fPtr, -(long)sizeof(struct clientData), SEEK_CUR);
+    fwrite(&client, sizeof(struct clientData), 1, fPtr);
+
+    printf("Deposit successful. New balance = %.2f\n", client.balance);
+}
+//to deposit amount in account
 // enable user to input menu choice
 unsigned int enterChoice(void)
 {
@@ -211,7 +286,9 @@ unsigned int enterChoice(void)
                  "2 - update an account\n"
                  "3 - add a new account\n"
                  "4 - delete an account\n"
-                 "5 - end program\n? ");
+                 "5 - end program\n"
+                 "6 - deposit\n"
+                 "7 - withdraw\n?  ");
 
     scanf("%u", &menuChoice); // receive choice from user
     return menuChoice;
